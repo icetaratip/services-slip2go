@@ -1,0 +1,13 @@
+{
+    "slip2go": {
+        "secret_key": "",
+        "base_url": "https://connect.slip2go.com",
+        "account_name_th": "",
+        "account_name_en": "",
+        "account_number": "",
+        "bank_code": "004",
+        "pass_codes": ["200000", "200001", "200200"],
+        "fail_codes": ["200401"]
+    }
+}
+
