@@ -52,15 +52,16 @@ async def process_slip_file(interaction, img: bytes, filename: str,
         return await interaction.followup.send(f"❌ {e}", ephemeral=True)
 
     fail = {
-        "200401": "⚠️ บัญชีผู้รับไม่ถูกต้อง",
-        "200500": "❌ สลิปปลอม / สลิปเสีย",
-        "200501": "⚠️ สลิปซ้ำ ห้ามใช้ซ้ำ"
+        "200401": "บัญชีผู้รับไม่ถูกต้อง ⚠️",
+        "200500": "สลิปปลอม / สลิปเสีย ❌",
+        "200501": "สลิปซ้ำ ห้ามใช้ซ้ำ ⚠️"
     }
 
-    if info["code"] in fail:
-        return await interaction.followup.send(fail[info['code']], ephemeral=True)
+    code = info["code"]
+    if code in fail:
+        return await interaction.followup.send(fail[code], ephemeral=True)
 
-    if info["code"] not in ("200000","200001","200200"):
+    if code not in {"200000", "200001", "200200"}:
         return await interaction.followup.send(
             f"❌ สลิปไม่ถูกต้อง ({info['message']})",
             ephemeral=True
@@ -68,28 +69,31 @@ async def process_slip_file(interaction, img: bytes, filename: str,
 
     recv = (info["receiver"] or "").lower()
     th = SLIP2GO["account_name_th"].lower()
-    en = SLIP2GO.get("account_name_en","").lower()
+    en = SLIP2GO.get("account_name_en", "").lower()
 
-    if th not in recv and (en and en not in recv):
+    if not (th in recv or (en and en in recv)):
         expect = SLIP2GO["account_name_th"] + (f" หรือ {SLIP2GO['account_name_en']}" if en else "")
         return await interaction.followup.send(
             f"⚠️ ชื่อบัญชีผู้รับไม่ตรง\nพบ: {info['receiver']}\nต้องเป็น: {expect}",
             ephemeral=True
         )
 
-    if info["amount"] is None:
+    if not info["amount"]:
         return await interaction.followup.send("ไม่พบยอดเงินในสลิป", ephemeral=True)
 
     amount = float(info["amount"])
-    update_user_balance(interaction.user.id, amount)
-    add_transaction_history(interaction.user.id, "slip2go", amount, info)
+    uid = interaction.user.id
+
+    update_user_balance(uid, amount)
+    add_transaction_history(uid, "slip2go", amount, info)
 
     await interaction.followup.send(
         f"**เติมเงินสำเร็จ !** ✅\n"
-        f"เลขทำรายการ: `{info['txid']}`\n"
+        f"เลขอ้างอิง: `{info['txid']}`\n"
         f"จำนวน: **{amount:,.2f} บาท**\n"
         f"ชื่อผู้โอน: {info['sender'] or '-'}",
         ephemeral=True
     )
 
     await send_topup_log(interaction.user, amount, info)
+
